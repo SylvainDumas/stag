@@ -9,7 +9,6 @@ type FieldLevel struct {
 
 type FieldIf interface {
 	Parent() FieldIf
-	//Top() FieldIf
 	Name() string
 	//FQDN() string
 	Type() string
@@ -21,20 +20,13 @@ type FieldIf interface {
 
 type Field struct {
 	parent FieldIf
-	//top    FieldIf
-	field reflect.StructField
-	value reflect.Value
+	field  reflect.StructField
+	value  reflect.Value
 }
 
 func (obj *Field) Parent() FieldIf {
 	return obj.parent
 }
-
-/*
-func (obj *Field) Top() FieldIf {
-	return obj.top
-}
-*/
 
 func (obj *Field) Name() string {
 	return obj.field.Name

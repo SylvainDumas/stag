@@ -27,12 +27,17 @@ func (obj *structFieldTest) Do(tagContent string, field stag.FieldIf) error {
 
 // _______________________ _______________________
 
-func TestBrowseNil(t *testing.T) {
-	// Check for nil entry
-	assert.NoError(t, stag.Browse(nil))
+func TestBrowseCall(t *testing.T) {
+	t.Run("Check for call with nil", func(t *testing.T) {
+		assert.NoError(t, stag.Browse(nil))
+	})
+
+	t.Run("Check for a no struct", func(t *testing.T) {
+		assert.Error(t, stag.Browse(5))
+	})
 }
 
-func TestParseStructVar(t *testing.T) {
+func TestBrowseStructVar(t *testing.T) {
 	var var1 struct {
 		person struct {
 			Age int `tag_test:"42"`
@@ -52,13 +57,13 @@ func TestParseStructVar(t *testing.T) {
 		// Check field
 		assert.Equal(t, "Age", field.Name(), "field name")
 		assert.Equal(t, reflect.Int.String(), field.Type(), "field type")
-		assert.EqualValues(t, 0, field.Value().Int(), "field value")
+		assert.Zero(t, field.Value().Int(), "field value")
 		return nil
 	}
 	assert.NoError(t, stag.Browse(&var1, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
 }
 
-func TestParseStructVarPointer(t *testing.T) {
+func TestBrowseStructVarPointer(t *testing.T) {
 	type identity struct {
 		Age int `tag_test:"42"`
 	}
@@ -92,7 +97,7 @@ func TestParseStructVarPointer(t *testing.T) {
 	assert.NoError(t, stag.Browse(&person, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
 }
 
-func TestParseStructHerited(t *testing.T) {
+func TestBrowseStructHerited(t *testing.T) {
 	type herited struct {
 		age int `tag_test:"42"`
 	}
@@ -110,7 +115,7 @@ func TestParseStructHerited(t *testing.T) {
 		// Check field
 		assert.Equal(t, "age", field.Name(), "field name")
 		assert.Equal(t, reflect.Int.String(), field.Type(), "field type")
-		assert.EqualValues(t, 0, field.Value().Int(), "field value")
+		assert.Zero(t, field.Value().Int(), "field value")
 		return nil
 	}
 	assert.NoError(t, stag.Browse(&varWithHerited, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
