@@ -4,43 +4,25 @@ import (
 	"reflect"
 )
 
+type browserOption func(*browser)
+
 func Browse(dst any, options ...browserOption) error {
 	return new(browser).setOptions(options...).browse(dst)
 }
 
-func BrowseSuggar(dst any, actors ...TagActorIf) error {
-	var browserOptions []browserOption
-	for _, v := range actors {
-		if v != nil {
-			browserOptions = append(browserOptions, WithTagActor(v))
-		}
-	}
-	return new(browser).setOptions(browserOptions...).browse(dst)
-}
-
-// ________________________ config ________________________
-
-type browserOption func(*browser)
-
-func WithTagActor(actor TagActorIf) browserOption {
-	return func(out *browser) {
-		out.tagFn = append(out.tagFn, actor)
-	}
-}
-
-//Toto option:
-//- continueOnError (or set type error critical and not critical,)
-//- lookup strategy ? (tag order)
-//- option recursive or inDepth struct ?
-
 // ________________________ browser ________________________
 
+type TagProcessorFn func(tagContent string, field FieldIf) error
+
 type browser struct {
-	tagFn    []TagActorIf
-	readOnly bool
+	tagProcessorsFn map[string]TagProcessorFn
+	readOnly        bool
 }
 
 func (obj *browser) setOptions(options ...browserOption) *browser {
+	if obj.tagProcessorsFn == nil {
+		obj.tagProcessorsFn = make(map[string]TagProcessorFn)
+	}
 	for _, v := range options {
 		if v != nil {
 			v(obj)
@@ -63,7 +45,7 @@ func (obj *browser) browse(dst any) error {
 	obj.readOnly = !isPointer
 
 	// If no tag actors, nothing to do
-	if len(obj.tagFn) == 0 {
+	if len(obj.tagProcessorsFn) == 0 {
 		return nil
 	}
 
@@ -80,24 +62,13 @@ func (obj *browser) browseStructFields(parent FieldIf, valueRef reflect.Value) e
 		var fieldName = fieldType.Name
 		var fieldValue = valueRef.FieldByName(fieldName)
 
-		//fmt.Printf("%+v\n", fieldType)
-		//fmt.Println(fieldValue.Kind(), fieldValue.Type(), fieldValue.CanSet())
-
 		if fieldValue.IsValid() == false {
 			continue
 		}
 
 		// Tag apply lookup for this field
-		for _, v := range obj.tagFn {
-			// tag actor struct with name
-			// switch assert cast by type tag_reader, tag_writer, tag_deeper and call with specific fn
-
-			if tagValue, found := fieldType.Tag.Lookup(v.Tag()); found {
-				//fmt.Printf("%v(%v, %v) [%v]: %v - %v\n", fieldName, fieldType.Anonymous, fieldValue.CanSet(), fieldValue.Kind(), fieldValue, tagValue)
-				if err := v.Do(tagValue, &Field{parent: parent, field: fieldType, value: fieldValue}); err != nil {
-					return err
-				}
-			}
+		if err := obj.applyFieldTagProcessors(fieldType.Tag, &Field{parent: parent, field: fieldType, value: fieldValue}); err != nil {
+			return err
 		}
 
 		// If not a direct or indirect value struct, pass to next field
@@ -111,9 +82,20 @@ func (obj *browser) browseStructFields(parent FieldIf, valueRef reflect.Value) e
 			parentField = &Field{parent: parent, field: fieldType, value: fieldValue}
 		}
 		// Anonymous, ptr on struct, array of struct, map of struct
-		//fmt.Printf("%v(%v, %v) [%v]: %v\n", fieldName, fieldType.Anonymous, fieldValue.CanSet(), fieldValue.Kind(), fieldValue)
 		if err := obj.browseStructFields(parentField, structFieldValue); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (obj *browser) applyFieldTagProcessors(structTag reflect.StructTag, field FieldIf) error {
+	for k, v := range obj.tagProcessorsFn {
+		if tagValue, found := structTag.Lookup(k); found {
+			if err := v(tagValue, field); err != nil {
+				return err
+			}
 		}
 	}
 

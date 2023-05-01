@@ -60,7 +60,7 @@ func TestBrowseStructVar(t *testing.T) {
 		assert.Zero(t, field.Value().Int(), "field value")
 		return nil
 	}
-	assert.NoError(t, stag.Browse(&var1, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
+	assert.NoError(t, stag.Browse(&var1, stag.WithTagFn(tagTest, expectedValueFn)))
 }
 
 func TestBrowseStructVarPointer(t *testing.T) {
@@ -72,9 +72,9 @@ func TestBrowseStructVarPointer(t *testing.T) {
 		id *identity
 	}
 
-	assert.NoError(t, stag.Browse(&person, stag.WithTagActor(&structFieldTest{Fn: func(s string, fi stag.FieldIf) error {
+	assert.NoError(t, stag.Browse(&person, stag.WithTagFn(tagTest, func(s string, fi stag.FieldIf) error {
 		return errors.New("must not be called")
-	}})))
+	})))
 
 	var expectedAge = 25
 	person.id = &identity{Age: expectedAge}
@@ -94,7 +94,7 @@ func TestBrowseStructVarPointer(t *testing.T) {
 		assert.EqualValues(t, expectedAge, field.Value().Int(), "field value")
 		return nil
 	}
-	assert.NoError(t, stag.Browse(&person, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
+	assert.NoError(t, stag.Browse(&person, stag.WithTagFn(tagTest, expectedValueFn)))
 }
 
 func TestBrowseStructHerited(t *testing.T) {
@@ -118,5 +118,5 @@ func TestBrowseStructHerited(t *testing.T) {
 		assert.Zero(t, field.Value().Int(), "field value")
 		return nil
 	}
-	assert.NoError(t, stag.Browse(&varWithHerited, stag.WithTagActor(&structFieldTest{Fn: expectedValueFn})))
+	assert.NoError(t, stag.Browse(&varWithHerited, stag.WithTagFn(tagTest, expectedValueFn)))
 }
