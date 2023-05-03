@@ -11,6 +11,5 @@ type BadValueErr struct {
 }
 
 func (obj *BadValueErr) Error() string {
-	//return "struct value expected"
-	return fmt.Sprintf("struct value expected, got %s (pointer: %v)", obj.RefValue.Kind(), obj.IsPointer)
+	return fmt.Sprintf("struct value expected (type=%s pointer=%v)", obj.RefValue.Kind(), obj.IsPointer)
 }

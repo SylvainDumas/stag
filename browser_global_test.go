@@ -9,23 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// _______________________ Struct test _______________________
-
 const tagTest = "tag_test"
-
-type structFieldTest struct {
-	Fn func(string, stag.FieldIf) error
-}
-
-func (obj *structFieldTest) Tag() string {
-	return tagTest
-}
-
-func (obj *structFieldTest) Do(tagContent string, field stag.FieldIf) error {
-	return obj.Fn(tagContent, field)
-}
-
-// _______________________ _______________________
 
 func TestBrowseCall(t *testing.T) {
 	t.Run("Check for call with nil", func(t *testing.T) {
@@ -33,8 +17,20 @@ func TestBrowseCall(t *testing.T) {
 	})
 
 	t.Run("Check for a no struct", func(t *testing.T) {
-		assert.Error(t, stag.Browse(5))
+		var expectedErr = new(stag.BadValueErr)
+		assert.ErrorAs(t, stag.Browse(5), &expectedErr)
 	})
+}
+
+func TestBrowseTagFnReturnError(t *testing.T) {
+	var var1 struct {
+		person struct {
+			Age int `tag_test:"42"`
+		}
+	}
+
+	var expectedErr = errors.New("tag function returning an error")
+	assert.ErrorIs(t, stag.Browse(&var1, stag.WithTagFn(tagTest, func(string, stag.FieldIf) error { return expectedErr })), expectedErr)
 }
 
 func TestBrowseStructVar(t *testing.T) {

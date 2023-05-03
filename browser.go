@@ -20,9 +20,11 @@ type browser struct {
 }
 
 func (obj *browser) setOptions(options ...browserOption) *browser {
+	// Init
 	if obj.tagProcessorsFn == nil {
 		obj.tagProcessorsFn = make(map[string]TagProcessorFn)
 	}
+	// Apply options
 	for _, v := range options {
 		if v != nil {
 			v(obj)
