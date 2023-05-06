@@ -6,7 +6,7 @@ import (
 
 type browserOption func(*browser)
 
-func Browse(dst any, options ...browserOption) error {
+func Browse(dst any, options ...optionFn) error {
 	return new(browser).setOptions(options...).browse(dst)
 }
 
@@ -15,21 +15,12 @@ func Browse(dst any, options ...browserOption) error {
 type TagProcessorFn func(tagContent string, field FieldIf) error
 
 type browser struct {
-	tagProcessorsFn map[string]TagProcessorFn
-	readOnly        bool
+	options  options
+	readOnly bool
 }
 
-func (obj *browser) setOptions(options ...browserOption) *browser {
-	// Init
-	if obj.tagProcessorsFn == nil {
-		obj.tagProcessorsFn = make(map[string]TagProcessorFn)
-	}
-	// Apply options
-	for _, v := range options {
-		if v != nil {
-			v(obj)
-		}
-	}
+func (obj *browser) setOptions(options ...optionFn) *browser {
+	obj.options.apply(options...)
 	return obj
 }
 
@@ -47,7 +38,7 @@ func (obj *browser) browse(dst any) error {
 	obj.readOnly = !isPointer
 
 	// If no tag actors, nothing to do
-	if len(obj.tagProcessorsFn) == 0 {
+	if len(obj.options.tagProcessorsFn) == 0 {
 		return nil
 	}
 
@@ -93,7 +84,7 @@ func (obj *browser) browseStructFields(parent FieldIf, valueRef reflect.Value) e
 }
 
 func (obj *browser) applyFieldTagProcessors(structTag reflect.StructTag, field FieldIf) error {
-	for k, v := range obj.tagProcessorsFn {
+	for k, v := range obj.options.tagProcessorsFn {
 		if tagValue, found := structTag.Lookup(k); found {
 			if err := v(tagValue, field); err != nil {
 				return err
