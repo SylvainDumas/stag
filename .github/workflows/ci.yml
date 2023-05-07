@@ -1,0 +1,63 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  # Go compiler
+  GO_VERSION: '1.18.10'
+  CGO_ENABLED: 0
+  GO_REPORT_COVERAGE_FILE: .report_coverage.out
+  GO_REPORT_TEST_FILE: .report_tests.json
+  # Sonar
+  SONAR_HOST_URL: https://sonarcloud.io
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  all:
+    name: Test, Code Quality
+    runs-on: ubuntu-20.04
+    steps:
+      # Setup source code
+      - uses: actions/checkout@v3
+        with:
+          # Disabling shallow clone is recommended for improving relevancy of reporting
+          fetch-depth: 0
+
+      # Setup GO
+      - name: 'Setup GO: Install'
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      # Test
+      - name: 'Test: Generate'
+        run: go generate ./...
+      - name: 'Test: Vet'
+        run: go vet ./...
+      - name: 'Test: Test'
+        run: go test -vet=off -coverprofile ${{ env.GO_REPORT_COVERAGE_FILE }} -json ./... 2>&1 | tee ${{ env.GO_REPORT_TEST_FILE }}
+
+      # Code quality
+      - name: 'Code quality: Setup SonarQube'
+        uses: warchant/setup-sonar-scanner@v4
+        with:
+          version: "4.8.0.2856"
+      - name: 'Code quality: Cache SonarQube packages'
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+      - name: 'Code quality: Run SonarQube'
+        run: sonar-scanner
+          -Dsonar.host.url=${{ env.SONAR_HOST_URL }}
+          -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          -Dsonar.go.coverage.reportPaths=${{ env.GO_REPORT_COVERAGE_FILE }}
+          -Dsonar.go.tests.reportPaths=${{ env.GO_REPORT_TEST_FILE }}

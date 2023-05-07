@@ -19,3 +19,15 @@
 
 # Go workspace file
 go.work
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode
+.idea
+
+# Draw.io working files
+*.bkp
+*.dtmp
