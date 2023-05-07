@@ -9,7 +9,7 @@ on:
 
 env:
   # Go compiler
-  GO_VERSION: '1.18.10'
+  GO_VERSION: '1.19.9'
   CGO_ENABLED: 0
   GO_REPORT_COVERAGE_FILE: .report_coverage.out
   GO_REPORT_TEST_FILE: .report_tests.json

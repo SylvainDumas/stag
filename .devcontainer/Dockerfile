@@ -1,3 +1,3 @@
-FROM golang:1.18.10-buster
+FROM golang:1.19.9-bullseye
 
 ENV CGO_ENABLED=0
